@@ -4,26 +4,24 @@
 class ExtendedKalmanFilter {
 public:
     ExtendedKalmanFilter();
-    void initialize(double x0, double y0);
-    void predict(double vx, double vy, double dt);
-    void update_gps(double x, double y);
+    void initialize(double x0, double y0, double z0);
+    void predict(double vx, double vy, double vz,double dt);
+    void update_gps(double x, double y, double z);
     
     // Configuración de parámetros
     void set_gps_noise(double noise);
     void set_process_noise(double pos_noise, double vel_noise);
     
-    Eigen::Vector2d get_position() const { return x_.head<2>(); }
-    Eigen::Vector2d get_velocity() const { return x_.tail<2>(); }
+    Eigen::Vector3d get_position() const { return x_.segment<3>(0); }
+    Eigen::Vector3d get_velocity() const { return x_.segment<3>(3); }
 
 private:
     // Estado: [x, y, vx, vy]
-    Eigen::Vector4d x_;
-    
+    Eigen::Matrix<double, 6, 1> x_;
+        
     // Matrices de covarianza
-    Eigen::Matrix4d P_;
-    Eigen::Matrix4d F_;
-    Eigen::Matrix4d Q_;
-    Eigen::Matrix<double, 2, 4> H_;
+    Eigen::Matrix<double, 6, 6> P_, F_, Q_;
+    Eigen::Matrix<double, 3, 6> H_;
     
     // Parámetros de ruido
     double gps_noise_ = 2.0;       // Valor alto inicial para menos confianza en GPS

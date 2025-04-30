@@ -29,13 +29,14 @@ public:
             [this](const nav_msgs::msg::Odometry::SharedPtr msg) {
                 last_vx_ = msg->twist.twist.linear.x;
                 last_vy_ = msg->twist.twist.linear.y;
+                last_vz_ = msg->twist.twist.linear.z;
             });
             
         gps_sub_ = create_subscription<sensor_msgs::msg::NavSatFix>(
             "/sensors/gps", 10,
             [this](const sensor_msgs::msg::NavSatFix::SharedPtr msg) {
                 if(!initialized_ && msg->status.status == sensor_msgs::msg::NavSatStatus::STATUS_FIX) {
-                    ekf_.initialize(msg->latitude, msg->longitude);
+                    ekf_.initialize(msg->latitude, msg->longitude, msg->altitude);
                     initialized_ = true;
                 }
                 last_gps_ = msg;
@@ -86,11 +87,11 @@ private:
         last_time_ = now;
 
         // Predicción con odometría
-        ekf_.predict(last_vx_, last_vy_, dt);
+        ekf_.predict(last_vx_, last_vy_, last_vz_, dt);
         
         // Corrección con GPS
         if(last_gps_ && last_gps_->status.status == sensor_msgs::msg::NavSatStatus::STATUS_FIX) {
-            ekf_.update_gps(last_gps_->latitude, last_gps_->longitude);
+            ekf_.update_gps(last_gps_->latitude, last_gps_->longitude, last_gps_->altitude);
             publish_gps_marker();
             last_gps_.reset();
         }
@@ -110,6 +111,7 @@ private:
         marker.type = visualization_msgs::msg::Marker::SPHERE;
         marker.pose.position.x = pos[0];
         marker.pose.position.y = pos[1];
+        marker.pose.position.z = pos[2];
         marker.scale.x = 0.2;
         marker.scale.y = 0.2;
         marker.scale.z = 0.2;
@@ -125,13 +127,16 @@ private:
         marker.header.stamp = last_gps_->header.stamp;
         marker.ns = "gps";
         marker.id = marker_id_++;
-        marker.type = visualization_msgs::msg::Marker::CUBE;
+        marker.type = visualization_msgs::msg::Marker::SPHERE;
         marker.pose.position.x = last_gps_->latitude;
         marker.pose.position.y = last_gps_->longitude;
+        marker.pose.position.z = last_gps_->altitude;
         marker.scale.x = 0.15;
         marker.scale.y = 0.15;
         marker.scale.z = 0.15;
-        marker.color.b = 1.0;
+        marker.color.r = 1.0;   
+        marker.color.g = 0.5;
+        marker.color.b = 0.0;
         marker.color.a = 0.6;
         marker.lifetime = rclcpp::Duration(3s);
         
@@ -157,7 +162,7 @@ private:
     ExtendedKalmanFilter ekf_;
     bool initialized_ = false;
     rclcpp::Time last_time_ = this->now();
-    double last_vx_ = 0, last_vy_ = 0;
+    double last_vx_ = 0, last_vy_ = 0, last_vz_ = 0;
     sensor_msgs::msg::NavSatFix::SharedPtr last_gps_;
     int marker_id_ = 0;
     nav_msgs::msg::Path path_;

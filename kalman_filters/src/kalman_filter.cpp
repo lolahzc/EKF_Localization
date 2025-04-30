@@ -2,17 +2,18 @@
 #include <iostream>
 
 ExtendedKalmanFilter::ExtendedKalmanFilter() {
-    x_ = Eigen::Vector4d::Zero();
-    P_ = Eigen::Matrix4d::Identity() * 0.1;
-    F_ = Eigen::Matrix4d::Identity();
-    Q_ = Eigen::Matrix4d::Identity();
-    H_ << 1, 0, 0, 0,
-           0, 1, 0, 0;
+    x_ = Eigen::Matrix<double, 6, 1>::Zero();
+    P_ = Eigen::Matrix<double, 6, 6>::Identity() * 0.1;
+    F_ = Eigen::Matrix<double, 6, 6>::Identity();
+    Q_ = Eigen::Matrix<double, 6, 6>::Identity();
+    H_ <<  1, 0, 0, 0, 0, 0,
+           0, 1, 0, 0, 0, 0,
+           0, 0, 1, 0, 0, 0;
     set_process_noise(pos_process_noise_, vel_process_noise_);
 }
 
-void ExtendedKalmanFilter::initialize(double x0, double y0) {
-    x_ << x0, y0, 0, 0;
+void ExtendedKalmanFilter::initialize(double x0, double y0, double z0) {
+    x_ << x0, y0, z0, 0, 0, 0;
 }
 
 void ExtendedKalmanFilter::set_gps_noise(double noise) {
@@ -22,17 +23,21 @@ void ExtendedKalmanFilter::set_gps_noise(double noise) {
 void ExtendedKalmanFilter::set_process_noise(double pos_noise, double vel_noise) {
     pos_process_noise_ = pos_noise;
     vel_process_noise_ = vel_noise;
-    Q_.diagonal() << pos_process_noise_, pos_process_noise_, vel_process_noise_, vel_process_noise_;
+    Q_.diagonal() << pos_process_noise_, pos_process_noise_, pos_process_noise_,
+                     vel_process_noise_, vel_process_noise_, vel_process_noise_;
 }
 
-void ExtendedKalmanFilter::predict(double vx, double vy, double dt) {
+void ExtendedKalmanFilter::predict(double vx, double vy, double vz, double dt) {
     // Actualizar velocidades
-    x_(2) = vx;
-    x_(3) = vy;
+    x_(3) = vx;
+    x_(4) = vy;
+    x_(5) = vz;
     
     // Actualizar matriz de transición
-    F_(0, 2) = dt;
-    F_(1, 3) = dt;
+    F_.setIdentity();
+    F_(0, 3) = dt;
+    F_(1, 4) = dt;
+    F_(2, 5) = dt;
     
     // Predicción del estado
     x_ = F_ * x_;
@@ -41,12 +46,14 @@ void ExtendedKalmanFilter::predict(double vx, double vy, double dt) {
     P_ = F_ * P_ * F_.transpose() + Q_;
 }
 
-void ExtendedKalmanFilter::update_gps(double x, double y) {
-    Eigen::Vector2d z(x, y);
-    Eigen::Matrix2d R = Eigen::Matrix2d::Identity() * gps_noise_;
+void ExtendedKalmanFilter::update_gps(double x, double y, double z) {
+    Eigen::Vector3d z_meas(x, y, z);
+    Eigen::Matrix3d R = Eigen::Matrix3d::Identity() * gps_noise_;
     
-    Eigen::MatrixXd K = P_ * H_.transpose() * (H_ * P_ * H_.transpose() + R).inverse();
+    Eigen::Matrix<double, 6, 3> Ht = H_.transpose();
+    Eigen::Matrix3d S = H_ * P_ * Ht + R;
+    Eigen::Matrix<double, 6, 3> K = P_ * Ht * S.inverse();
     
-    x_ += K * (z - H_ * x_);
-    P_ = (Eigen::Matrix4d::Identity() - K * H_) * P_;
+    x_ += K * (z_meas - H_ * x_);
+    P_ = (Eigen::Matrix<double, 6, 6>::Identity() - K * H_) * P_;
 }
