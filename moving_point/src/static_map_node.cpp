@@ -124,7 +124,7 @@ private:
 // =======================
 class AltimeterNode : public rclcpp::Node {
 public:
-    AltimeterNode() : Node("altimeter_node"), max_altitude_(3.0) {
+    AltimeterNode() : Node("altimeter_node"), max_altitude_(float('inf')) {
         sub_pose_ = this->create_subscription<nav_msgs::msg::Odometry>(
             "/ground_truth/odom", 10,
             std::bind(&AltimeterNode::pose_callback, this, std::placeholders::_1));
