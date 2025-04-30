@@ -6,19 +6,19 @@ class ExtendedKalmanFilter {
 public:
     ExtendedKalmanFilter();
 
-    void init(const Eigen::VectorXd& x0, const Eigen::MatrixXd& P0);
-    void predict(double dt);
-    void updateGPS(const Eigen::Vector3d& z);
-    void updateOdom(const Eigen::Vector3d& z);
+    void init(const Eigen::VectorXd& x0, const Eigen::MatrixXd& P0);    // Inicializa el filtro con el estado inicial y la covarianza
+    void predict(double dt, const Eigen::Vector3d& omega);                // Predicción del estado y covarianza
+    void updateGPS(const Eigen::Vector3d& z);                             // Actualiza el estado con la medición GPS
+    void updateOdom(const Eigen::Vector3d& v_measured);                  // Actualiza el estado con la medición de odometría  
 
-    const Eigen::VectorXd& getState() const { return x_; }
+    const Eigen::VectorXd& getState() const { return x_; }               // Devuelve el estado actual
 
 private:
-    Eigen::VectorXd x_; // Estado: [x, y, z, vx, vy, vz]
-    Eigen::MatrixXd P_; // Covarianza del estado
-    Eigen::MatrixXd Q_; // Ruido del proceso
-    Eigen::MatrixXd R_gps_;   // Ruido de medición GPS
-    Eigen::MatrixXd R_odom_;  // Ruido de medición Odometría
+    Eigen::VectorXd x_;                                                 // Estado: [x, y, z, theta, phi, v]
+    Eigen::MatrixXd P_;                                                 // Covarianza del estado
+    Eigen::MatrixXd Q_;                                                 // Ruido del proceso
+    Eigen::MatrixXd R_gps_;                                             // Ruido de medición GPS
+    Eigen::MatrixXd R_odom_;                                            // Ruido de medición Odometría
 
-    Eigen::MatrixXd I_; // Matriz identidad
+    Eigen::MatrixXd I_;                                                 // Matriz identidad
 };
