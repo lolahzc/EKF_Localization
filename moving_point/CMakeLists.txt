@@ -12,6 +12,7 @@ find_package(rclcpp REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 # Nodo del punto móvil
 add_executable(random_point_node
@@ -29,6 +30,9 @@ add_executable(static_map_node
 )
 ament_target_dependencies(static_map_node
   rclcpp
+  geometry_msgs
+  nav_msgs
+  std_msgs
   visualization_msgs
 )
 
@@ -48,6 +52,10 @@ install(
 ament_export_dependencies(
   rclcpp
   visualization_msgs
+  nav_msgs
+  geometry_msgs
+  std_msgs
+  sensor_msgs
 )
 
 ament_package()
