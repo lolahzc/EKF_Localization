@@ -14,8 +14,8 @@ public:
                         x_(0.0), y_(0.0), z_(0.0),
                         vx_(0.0), vy_(0.0), vz_(0.0),
                         max_speed_(0.5),
-                        max_delta_v_(0.1),
-                        max_height_(0.2),
+                        max_delta_v_(0.2),
+                        max_height_(4.0),
                         gps_count_(0) {
         // Publishers
         marker_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("/moving_point", 10);
@@ -32,11 +32,11 @@ public:
         gen_ = std::mt19937(std::random_device{}());
         vx_ = std::uniform_real_distribution<>(-max_speed_, max_speed_)(gen_);
         vy_ = std::uniform_real_distribution<>(-max_speed_, max_speed_)(gen_);
+        vz_ = std::uniform_real_distribution<>(-max_height_, max_height_)(gen_);
         
         // Parameters
         declare_parameter("odom_noise_variance", 0.01);
         declare_parameter("gps_noise_variance", 0.1);
-        declare_parameter("simulate_irregularities", false);
     }
 
 private:
@@ -53,25 +53,28 @@ private:
         std::uniform_real_distribution<> delta_dist(-max_delta_v_, max_delta_v_);
         vx_ += delta_dist(gen_);
         vy_ += delta_dist(gen_);
+        vz_ += delta_dist(gen_);
         
         // Clamp velocity
         vx_ = std::clamp(vx_, -max_speed_, max_speed_);
         vy_ = std::clamp(vy_, -max_speed_, max_speed_);
+        vz_ = std::clamp(vz_, -max_height_, max_height_);
+
+        if (std::abs(vz_) < 0.01) {
+            vz_ += std::uniform_real_distribution<>(-0.05, 0.05)(gen_) ; // Stop vertical movement if close to zero
+        }
         
         // Update position
         x_ += vx_ * dt;
         y_ += vy_ * dt;
-        z_ = 0.0;
+        z_ += vz_ * dt;
         
         // Check boundaries
         check_boundary(x_, vx_, -2.0, 2.0);
         check_boundary(y_, vy_, -2.0, 2.0);
+        check_boundary(z_, vz_, 0.0, max_height_);
         
-        // Simulate height irregularities
-        if (get_parameter("simulate_irregularities").as_bool()) {
-            std::normal_distribution<> z_dist(0.0, 0.02);
-            z_ = std::clamp(z_dist(gen_), 0.0, max_height_);
-        }
+
     }
 
     void publish_marker() {
@@ -188,12 +191,13 @@ private:
     }
 
     void check_boundary(double& pos, double& vel, double min, double max) {
+        const double rebound_factor = 0.7;
         if (pos > max) {
             pos = max;
-            vel = -std::abs(vel);
+            vel = -std::abs(vel) * rebound_factor;
         } else if (pos < min) {
             pos = min;
-            vel = std::abs(vel);
+            vel = std::abs(vel) * rebound_factor;
         }
     }
 
@@ -218,58 +222,6 @@ private:
     rclcpp::TimerBase::SharedPtr update_timer_;
     rclcpp::TimerBase::SharedPtr sensor_timer_;
 };
-
-class StaticMapNode : public rclcpp::Node {
-    public:
-        StaticMapNode() : Node("static_map_node") {
-            publisher_ = this->create_publisher<visualization_msgs::msg::Marker>("/static_map", 10);
-            timer_ = this->create_wall_timer(1s, [this]() { publish_map(); });
-            
-            // Puntos del mapa (personalízalos)
-            map_points_ = {
-                {0.0, 0.0, 0.0},
-                {2.0, 0.0, 0.0},
-                {-2.0, 0.0, 0.0},
-                {0.0, 2.0, 0.0},
-                {0.0, -2.0, 0.0}
-            };
-        }
-    
-    private:
-        void publish_map() {
-            int id = 0;
-            for (const auto& point : map_points_) {
-                auto marker = visualization_msgs::msg::Marker();
-                
-                marker.header.frame_id = "world";
-                marker.header.stamp = now();
-                marker.ns = "static_map";
-                marker.id = id++;
-                marker.type = visualization_msgs::msg::Marker::CUBE;
-                marker.action = visualization_msgs::msg::Marker::ADD;
-                
-                marker.pose.position.x = point[0];
-                marker.pose.position.y = point[1];
-                marker.pose.position.z = point[2];
-                
-                marker.scale.x = 0.2;
-                marker.scale.y = 0.2;
-                marker.scale.z = 0.2;
-                
-                marker.color.r = 0.0;
-                marker.color.g = 0.0;
-                marker.color.b = 1.0;
-                marker.color.a = 1.0;
-                
-                publisher_->publish(marker);
-            }
-        }
-    
-        rclcpp::TimerBase::SharedPtr timer_;
-        rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr publisher_;
-        std::vector<std::array<double, 3>> map_points_;
-    };
-    
 
 int main(int argc, char * argv[]) {
     rclcpp::init(argc, argv);

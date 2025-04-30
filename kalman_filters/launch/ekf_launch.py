@@ -29,7 +29,7 @@ def generate_launch_description():
             name='ekf_filter',
             parameters=[{
                 'gps_noise': 2.0,           # Mayor valor = menos confianza en GPS
-                'pos_process_noise': 0.005, # Menor valor = más confianza en modelo de posición
+                'pos_process_noise': 0.0005, # Menor valor = más confianza en modelo de posición
                 'vel_process_noise': 0.0005 # Menor valor = más confianza en modelo de velocidad
         }]
         ),
