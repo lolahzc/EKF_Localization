@@ -5,9 +5,9 @@
 ExtendedKalmanFilter::ExtendedKalmanFilter() {
     x_ = Eigen::VectorXd::Zero(6);                          // Estado: [x, y, z, theta, phi, v]
     P_ = Eigen::MatrixXd::Identity(6, 6);                   // Covarianza inicial
-    Q_ = Eigen::MatrixXd::Identity(6, 6) * 0.01;            // Ruido del proceso
-    R_gps_ = Eigen::MatrixXd::Identity(3, 3) * 0.1;         // Ruido de medición GPS (ahora 3D)
-    R_odom_ = Eigen::MatrixXd::Identity(3, 3) * 0.05;       // Ruido de medición Odometría (3D)
+    Q_ = Eigen::MatrixXd::Identity(6, 6) * 0.2;             // Ruido del proceso
+    R_gps_ = Eigen::MatrixXd::Identity(3, 3) * 0.1;        // Ruido de medición GPS (ahora 3D)
+    R_odom_ = Eigen::MatrixXd::Identity(3, 3) * 0.1;       // Ruido de medición Odometría (3D)
     I_ = Eigen::MatrixXd::Identity(6, 6);                   // Matriz identidad
 }
 

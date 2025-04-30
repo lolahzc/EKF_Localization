@@ -68,14 +68,14 @@ private:
         marker.pose.position.y = x(1);
         marker.pose.position.z = x(2);  // Z ahora está incluido en 3D
 
-        marker.scale.x = 0.3;
-        marker.scale.y = 0.3;
-        marker.scale.z = 0.3;
+        marker.scale.x = 0.2;
+        marker.scale.y = 0.2;
+        marker.scale.z = 0.2;
 
         marker.color.a = 1.0;
-        marker.color.r = 0.0;
+        marker.color.r = 1.0;
         marker.color.g = 0.5;
-        marker.color.b = 1.0;
+        marker.color.b = 0.0;
 
         marker_pub_->publish(marker);
     }
