@@ -8,6 +8,9 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 add_executable(ekf_node
   src/ekf_node.cpp
@@ -25,6 +28,10 @@ ament_target_dependencies(ekf_node
   nav_msgs
   sensor_msgs
   geometry_msgs
+  visualization_msgs
+  tf2_ros
+  Eigen3
+  tf2_geometry_msgs
   visualization_msgs
 )
 

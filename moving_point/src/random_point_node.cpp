@@ -5,6 +5,7 @@
 #include <random>
 #include <chrono>
 #include <algorithm>
+#include <tf2/LinearMath/Quaternion.h>
 
 using namespace std::chrono_literals;
 
@@ -13,6 +14,7 @@ public:
     RandomPointNode() : Node("random_point_node"),
                         x_(0.0), y_(0.0), z_(0.0),
                         vx_(0.0), vy_(0.0), vz_(0.0),
+                        roll_(0.0), pitch_(0.0), yaw_(0.0),
                         max_speed_(0.5),
                         max_delta_v_(0.2),
                         max_height_(4.0),
@@ -61,7 +63,7 @@ private:
         vz_ = std::clamp(vz_, -max_height_, max_height_);
 
         if (std::abs(vz_) < 0.01) {
-            vz_ += std::uniform_real_distribution<>(-0.05, 0.05)(gen_) ; // Stop vertical movement if close to zero
+            vz_ += std::uniform_real_distribution<>(-0.05, 0.05)(gen_); // Stop vertical movement if close to zero
         }
         
         // Update position
@@ -73,8 +75,6 @@ private:
         check_boundary(x_, vx_, -2.0, 2.0);
         check_boundary(y_, vy_, -2.0, 2.0);
         check_boundary(z_, vz_, 0.0, max_height_);
-        
-
     }
 
     void publish_marker() {
@@ -85,20 +85,29 @@ private:
         marker.id = 0;
         marker.type = visualization_msgs::msg::Marker::SPHERE;
         marker.action = visualization_msgs::msg::Marker::ADD;
-        
-        // Corregir posición
+
+        // Actualizar la posición
         marker.pose.position.x = x_;
         marker.pose.position.y = y_;
         marker.pose.position.z = z_;
         
-        marker.pose.orientation.w = 1.0;
+        // Usar roll, pitch, yaw para la orientación
+        tf2::Quaternion quat;
+        quat.setRPY(roll_, pitch_, yaw_);
         
-        // Corregir escala
+        // Convertir el Quaternion a geometry_msgs::msg::Quaternion manualmente
+        geometry_msgs::msg::Quaternion quat_msg;
+        quat_msg.x = quat.x();
+        quat_msg.y = quat.y();
+        quat_msg.z = quat.z();
+        quat_msg.w = quat.w();
+
+        marker.pose.orientation = quat_msg;
+        
+        // Corregir escala y color
         marker.scale.x = 0.1;
         marker.scale.y = 0.1;
         marker.scale.z = 0.1;
-        
-        // Corregir color
         marker.color.r = 0.0;
         marker.color.g = 1.0;
         marker.color.b = 0.0;
@@ -163,7 +172,7 @@ private:
             gps.header.frame_id = "world";
             gps.latitude = x_ + gps_noise(gen_);
             gps.longitude = y_ + gps_noise(gen_);
-            gps.altitude = z_;
+            gps.altitude = z_ + gps_noise(gen_);
             gps.status.status = sensor_msgs::msg::NavSatStatus::STATUS_FIX;
             noisy_gps_pub_->publish(gps);
 
@@ -176,7 +185,7 @@ private:
             marker.action = visualization_msgs::msg::Marker::ADD;
             marker.pose.position.x = gps.latitude;
             marker.pose.position.y = gps.longitude;
-            marker.pose.position.z = 0.0;
+            marker.pose.position.z = gps.altitude;
             marker.scale.x = 0.1;
             marker.scale.y = 0.1;
             marker.scale.z = 0.1;
@@ -204,6 +213,7 @@ private:
     // Variables
     double x_, y_, z_;
     double vx_, vy_, vz_;
+    double roll_, pitch_, yaw_;
     double max_speed_;
     double max_delta_v_;
     double max_height_;
