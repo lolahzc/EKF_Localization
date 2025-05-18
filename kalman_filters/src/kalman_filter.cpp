@@ -8,6 +8,8 @@ ExtendedKalmanFilter::ExtendedKalmanFilter() {
     Q_ = Eigen::MatrixXd::Identity(6, 6) * 0.2;             // Ruido del proceso
     R_gps_ = Eigen::MatrixXd::Identity(3, 3) * 0.1;         // Ruido de medición GPS (3D)
     R_odom_ = Eigen::MatrixXd::Identity(3, 3) * 0.1;        // Ruido de medición Odometría (3D)
+    R_beacon_ = Eigen::MatrixXd::Identity(1, 1) * 0.04;     // Ruido de medición de balizas (1D)
+    R_alt_ = Eigen::MatrixXd::Identity(1, 1) * 0.0025;      // Ruido de medición altímetro (1D)
     I_ = Eigen::MatrixXd::Identity(6, 6);                   // Matriz identidad
 }
 
@@ -88,6 +90,42 @@ void ExtendedKalmanFilter::updateOdom(const Eigen::Vector3d& v_measured) {
     Eigen::MatrixXd S = H * P_ * H.transpose() + R_odom_;
     Eigen::MatrixXd K = P_ * H.transpose() * S.inverse();
 
+    x_ = x_ + K * y;
+    P_ = (I_ - K * H) * P_;
+}
+
+// Actualiza el estado con las distancias a balizas
+void ExtendedKalmanFilter::updateBeacons(const std::vector<double>& distances, const std::vector<Eigen::Vector3d>& beacon_positions) {
+    // Para cada baliza disponible (distancia >= 0)
+    for (size_t i = 0; i < distances.size(); ++i) {
+        if (distances[i] < 0.0) continue; // No disponible
+        // Predicción de la distancia desde el estado actual (solo x, y)
+        double dx = x_(0) - beacon_positions[i](0);
+        double dy = x_(1) - beacon_positions[i](1);
+        double dist_pred = std::sqrt(dx*dx + dy*dy);
+        if (dist_pred < 1e-6) continue; // Evitar división por cero
+        // Jacobiano H (1x6), solo x e y
+        Eigen::MatrixXd H = Eigen::MatrixXd::Zero(1, 6);
+        H(0, 0) = dx / dist_pred;
+        H(0, 1) = dy / dist_pred;
+        // Residuo
+        double y = distances[i] - dist_pred;
+        // Covarianza de medición
+        Eigen::MatrixXd S = H * P_ * H.transpose() + R_beacon_;
+        Eigen::MatrixXd K = P_ * H.transpose() * S.inverse();
+        x_ = x_ + K * y;
+        P_ = (I_ - K * H) * P_;
+    }
+}
+
+// Actualiza el estado con la medición del altímetro (z)
+void ExtendedKalmanFilter::updateAltimeter(double z_measured) {
+    // h(x) = z
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(1, 6);
+    H(0, 2) = 1.0;
+    double y = z_measured - x_(2);
+    Eigen::MatrixXd S = H * P_ * H.transpose() + R_alt_;
+    Eigen::MatrixXd K = P_ * H.transpose() * S.inverse();
     x_ = x_ + K * y;
     P_ = (I_ - K * H) * P_;
 }

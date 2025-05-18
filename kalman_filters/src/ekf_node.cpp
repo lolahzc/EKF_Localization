@@ -4,6 +4,8 @@
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <tf2/LinearMath/Quaternion.h>
+#include <std_msgs/msg/float64_multi_array.hpp>
+#include <std_msgs/msg/float64.hpp>
 
 class EKFNode : public rclcpp::Node {
 public:
@@ -18,11 +20,28 @@ public:
             "/sensors/gps", 10,
             std::bind(&EKFNode::gps_callback, this, std::placeholders::_1));
 
+        // Suscripción a balizas y altímetro
+        beacon_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
+            "/beacon_distances", 10,
+            std::bind(&EKFNode::beacon_callback, this, std::placeholders::_1));
+        altimeter_sub_ = this->create_subscription<std_msgs::msg::Float64>(
+            "/altimeter", 10,
+            std::bind(&EKFNode::altimeter_callback, this, std::placeholders::_1));
+
         marker_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("/ekf/pos_estimated", 10);
 
         timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&EKFNode::publish_estimate, this));
-    }
 
+        // Posiciones fijas de las balizas (deben coincidir con las del mapa)
+        beacon_positions_ = {
+            Eigen::Vector3d(0.0, 0.0, 0.0),
+            Eigen::Vector3d(4.0, 0.0, 0.0),
+            Eigen::Vector3d(-5.0, 2.0, 0.0),
+            Eigen::Vector3d(1.0, 3.0, 0.0),
+            Eigen::Vector3d(0.0, -4.0, 0.0)
+        };
+    }
+ 
 private:
     void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {
         Eigen::Vector3d v;
@@ -49,6 +68,19 @@ private:
             ekf_->predict(dt, last_omega_);
             ekf_->updateGPS(pos);
             last_time_ = now;
+        }
+    }
+
+    void beacon_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
+        if (!initialized_) return;
+        // Pasa las distancias y las posiciones de las balizas al EKF
+        ekf_->updateBeacons(msg->data, beacon_positions_);
+    }
+
+    void altimeter_callback(const std_msgs::msg::Float64::SharedPtr msg) {
+        if (!initialized_) return;
+        if (msg->data >= 0.0) { // -1.0 indica no disponible
+            ekf_->updateAltimeter(msg->data);
         }
     }
 
@@ -88,6 +120,11 @@ private:
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gps_sub_;
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_;
+
+    // Nuevas suscripciones y posiciones de balizas
+    std::vector<Eigen::Vector3d> beacon_positions_;
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr beacon_sub_;
+    rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr altimeter_sub_;
 
     rclcpp::TimerBase::SharedPtr timer_;
 };

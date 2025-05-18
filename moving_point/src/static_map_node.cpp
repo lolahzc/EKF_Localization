@@ -21,10 +21,10 @@ public:
         
         map_points_ = {
             {0.0, 0.0, 0.0},
-            {2.0, 0.0, 0.0},
-            {-2.0, 0.0, 0.0},
-            {0.0, 2.0, 0.0},
-            {0.0, -2.0, 0.0}
+            {4.0, 0.0, 0.0},
+            {-5.0, 2.0, 0.0},
+            {1.0, 3.0, 0.0},
+            {0.0, -4.0, 0.0}
         };
     }
 
@@ -74,7 +74,7 @@ private:
 class BeaconDistanceNode : public rclcpp::Node {
 public:
     BeaconDistanceNode(const std::vector<std::array<double, 3>>& beacons)
-    : Node("beacon_distance_node"), beacons_(beacons), max_range_(2.0) {
+    : Node("beacon_distance_node"), beacons_(beacons), max_range_(5.0) {
         sub_pose_ = this->create_subscription<nav_msgs::msg::Odometry>(
             "/ground_truth/odom", 10,
             std::bind(&BeaconDistanceNode::pose_callback, this, std::placeholders::_1));
@@ -124,7 +124,7 @@ private:
 // =======================
 class AltimeterNode : public rclcpp::Node {
 public:
-    AltimeterNode() : Node("altimeter_node"), max_altitude_(float('inf')) {
+    AltimeterNode() : Node("altimeter_node"), max_altitude_(20.0) {
         sub_pose_ = this->create_subscription<nav_msgs::msg::Odometry>(
             "/ground_truth/odom", 10,
             std::bind(&AltimeterNode::pose_callback, this, std::placeholders::_1));
