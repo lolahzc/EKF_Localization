@@ -17,7 +17,7 @@ public:
                         roll_(0.0), pitch_(0.0), yaw_(0.0),
                         max_speed_(0.5),
                         max_delta_v_(0.2),
-                        max_height_(4.0),
+                        max_height_(5.0),
                         gps_count_(0) {
         // Publishers
         marker_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("/moving_point", 10);
@@ -72,8 +72,8 @@ private:
         z_ += vz_ * dt;
         
         // Check boundaries
-        check_boundary(x_, vx_, -2.0, 2.0);
-        check_boundary(y_, vy_, -2.0, 2.0);
+        check_boundary(x_, vx_, -5.0, 5.0);
+        check_boundary(y_, vy_, -5.0, 5.0);
         check_boundary(z_, vz_, 0.0, max_height_);
     }
 

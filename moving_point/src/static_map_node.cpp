@@ -16,9 +16,14 @@ class StaticMapNode : public rclcpp::Node {
 public:
     StaticMapNode() : Node("static_map_node") {
         publisher_ = this->create_publisher<visualization_msgs::msg::Marker>("/static_map", 10);
+        publisher_bea_range_ = this->create_publisher<visualization_msgs::msg::Marker>("/beacon_range", 10);
         timer_ = this->create_wall_timer(
             1s, std::bind(&StaticMapNode::publish_map, this));
         
+        timer_bea_range_ = this->create_wall_timer(
+            1s, std::bind(&StaticMapNode::publish_bea_ran_, this));
+
+
         map_points_ = {
             {0.0, 0.0, 0.0},
             {4.0, 0.0, 0.0},
@@ -63,8 +68,40 @@ private:
         }
     }
 
+    void publish_bea_ran_() {
+        int id = 0;
+        for (const auto& point : map_points_) {
+            auto marker = visualization_msgs::msg::Marker();
+            marker.header.frame_id = "world";
+            marker.header.stamp = this->now();
+            marker.ns = "static_map";
+            marker.id = id++;
+            marker.type = visualization_msgs::msg::Marker::SPHERE;
+            marker.action = visualization_msgs::msg::Marker::ADD;
+
+            marker.pose.position.x = point[0];
+            marker.pose.position.y = point[1];
+            marker.pose.position.z = point[2];
+
+            marker.pose.orientation.w = 1.0;
+            marker.scale.x = 10.0;
+            marker.scale.y = 10.0;
+            marker.scale.z = 10.0;
+
+            marker.color.a = 0.1;
+            marker.color.r = 0.0;
+            marker.color.g = 0.0;
+            marker.color.b = 1.0;
+
+            marker.lifetime = rclcpp::Duration(0, 0);
+            publisher_bea_range_->publish(marker);
+        }
+    }
+
     rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::TimerBase::SharedPtr timer_bea_range_;
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr publisher_;
+    rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr publisher_bea_range_;
     std::vector<std::array<double, 3>> map_points_;
 };
 

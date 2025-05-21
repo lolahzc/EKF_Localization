@@ -6,14 +6,14 @@ class ExtendedKalmanFilter {
 public:
     ExtendedKalmanFilter();
 
-    void init(const Eigen::VectorXd& x0, const Eigen::MatrixXd& P0);    // Inicializa el filtro con el estado inicial y la covarianza
-    void predict(double dt, const Eigen::Vector3d& omega);                // Predicción del estado y covarianza
-    void updateGPS(const Eigen::Vector3d& z);                             // Actualiza el estado con la medición GPS
-    void updateOdom(const Eigen::Vector3d& v_measured);                  // Actualiza el estado con la medición de odometría  
-    void updateBeacons(const std::vector<double>& distances, const std::vector<Eigen::Vector3d>& beacon_positions); // Actualiza con distancias a balizas
-    void updateAltimeter(double z_measured); // Actualiza con altímetro
+    void init(const Eigen::VectorXd& x0, const Eigen::MatrixXd& P0);                                                    // Inicializa el filtro con el estado inicial y la covarianza
+    void predict(double dt, const Eigen::Vector3d& omega);                                                              // Predicción del estado y covarianza
+    void updateGPS(const Eigen::Vector3d& z);                                                                           // Actualiza el estado con la medición GPS
+    void updateOdom(const Eigen::Vector3d& v_measured);                                                                 // Actualiza el estado con la medición de odometría  
+    void updateBeacons(const std::vector<double>& distances, const std::vector<Eigen::Vector3d>& beacon_positions);     // Actualiza con distancias a balizas
+    void updateAltimeter(double z_measured);                                                                            // Actualiza con altímetro
 
-    const Eigen::VectorXd& getState() const { return x_; }               // Devuelve el estado actual
+    const Eigen::VectorXd& getState() const { return x_; }              // Devuelve el estado actual
 
 private:
     Eigen::VectorXd x_;                                                 // Estado: [x, y, z, theta, phi, v]

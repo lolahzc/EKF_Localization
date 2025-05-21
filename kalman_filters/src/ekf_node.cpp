@@ -32,7 +32,7 @@ public:
 
         timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&EKFNode::publish_estimate, this));
 
-        // Posiciones fijas de las balizas (deben coincidir con las del mapa)
+        // Posiciones fijas de las balizas (deben coincidir con las del mapa (o lo hacemos a mano o si tenemos tiempo lo ponemos como una única variable global))
         beacon_positions_ = {
             Eigen::Vector3d(0.0, 0.0, 0.0),
             Eigen::Vector3d(4.0, 0.0, 0.0),
