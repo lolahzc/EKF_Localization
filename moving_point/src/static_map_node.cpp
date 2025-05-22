@@ -26,10 +26,10 @@ public:
 
         map_points_ = {
             {0.0, 0.0, 0.0},
-            {4.0, 0.0, 0.0},
-            {-5.0, 2.0, 0.0},
-            {1.0, 3.0, 0.0},
-            {0.0, -4.0, 0.0}
+            {4.0, 0.0, 2.0},
+            {-5.0, 2.0, 1.0},
+            {1.0, 3.0, 0.5},
+            {0.0, -4.0, 3.0}
         };
     }
 
@@ -84,9 +84,9 @@ private:
             marker.pose.position.z = point[2];
 
             marker.pose.orientation.w = 1.0;
-            marker.scale.x = 10.0;
-            marker.scale.y = 10.0;
-            marker.scale.z = 10.0;
+            marker.scale.x = 16.0;
+            marker.scale.y = 16.0;
+            marker.scale.z = 16.0;
 
             marker.color.a = 0.1;
             marker.color.r = 0.0;
@@ -111,7 +111,7 @@ private:
 class BeaconDistanceNode : public rclcpp::Node {
 public:
     BeaconDistanceNode(const std::vector<std::array<double, 3>>& beacons)
-    : Node("beacon_distance_node"), beacons_(beacons), max_range_(5.0) {
+    : Node("beacon_distance_node"), beacons_(beacons), max_range_(8.0) {
         sub_pose_ = this->create_subscription<nav_msgs::msg::Odometry>(
             "/ground_truth/odom", 10,
             std::bind(&BeaconDistanceNode::pose_callback, this, std::placeholders::_1));
@@ -121,12 +121,18 @@ public:
         std::random_device rd;
         gen_ = std::mt19937(rd());
         noise_ = std::normal_distribution<>(0.0, 0.20);  // 20cm de ruido gaussiano
+        dis_ = std::uniform_real_distribution<>(0.0, 1.0);
+
     }
 
 private:
     void pose_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {
         double x = msg->pose.pose.position.x;
         double y = msg->pose.pose.position.y;
+        double z = msg->pose.pose.position.z;
+
+        double success_rate = 0.8; // 80% de acierto
+
 
         std_msgs::msg::Float64MultiArray distances_msg;
         distances_msg.data.clear();
@@ -134,13 +140,18 @@ private:
         for (const auto& beacon : beacons_) {
             double dx = beacon[0] - x;
             double dy = beacon[1] - y;
-            double dist = std::sqrt(dx*dx + dy*dy);
+            double dz = beacon[2] - z;
+            double dist = std::sqrt(dx*dx + dy*dy + dz*dz);
 
-            if (dist > max_range_) {
-                distances_msg.data.push_back(-1.0);  // No disponible
+            if (dis_(gen_) < success_rate) {   
+                if (dist > max_range_) {
+                    distances_msg.data.push_back(-1.0);  // No disponible
+                } else {
+                    double noisy_dist = dist + noise_(gen_);
+                    distances_msg.data.push_back(noisy_dist);
+                }
             } else {
-                double noisy_dist = dist + noise_(gen_);
-                distances_msg.data.push_back(noisy_dist);
+                distances_msg.data.push_back(-1.0);  // No disponible
             }
         }
 
@@ -154,6 +165,7 @@ private:
 
     std::mt19937 gen_;
     std::normal_distribution<> noise_;
+    std::uniform_real_distribution<> dis_;
 };
 
 // =======================

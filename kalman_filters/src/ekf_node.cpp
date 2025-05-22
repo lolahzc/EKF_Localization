@@ -35,10 +35,10 @@ public:
         // Posiciones fijas de las balizas (deben coincidir con las del mapa (o lo hacemos a mano o si tenemos tiempo lo ponemos como una única variable global))
         beacon_positions_ = {
             Eigen::Vector3d(0.0, 0.0, 0.0),
-            Eigen::Vector3d(4.0, 0.0, 0.0),
-            Eigen::Vector3d(-5.0, 2.0, 0.0),
-            Eigen::Vector3d(1.0, 3.0, 0.0),
-            Eigen::Vector3d(0.0, -4.0, 0.0)
+            Eigen::Vector3d(4.0, 0.0, 2.0),
+            Eigen::Vector3d(-5.0, 2.0, 1.0),
+            Eigen::Vector3d(1.0, 3.0, 0.5),
+            Eigen::Vector3d(0.0, -4.0, 3.0)
         };
     }
  
@@ -73,14 +73,21 @@ private:
 
     void beacon_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
         if (!initialized_) return;
-        // Pasa las distancias y las posiciones de las balizas al EKF
+        auto now = this->now();
+        double dt = (now - last_time_).seconds();
+        ekf_->predict(dt, last_omega_);
         ekf_->updateBeacons(msg->data, beacon_positions_);
+        last_time_ = now;
     }
 
     void altimeter_callback(const std_msgs::msg::Float64::SharedPtr msg) {
         if (!initialized_) return;
         if (msg->data >= 0.0) { // -1.0 indica no disponible
+            auto now = this->now();
+            double dt = (now - last_time_).seconds();
+            ekf_->predict(dt, last_omega_);
             ekf_->updateAltimeter(msg->data);
+            last_time_ = now;
         }
     }
 

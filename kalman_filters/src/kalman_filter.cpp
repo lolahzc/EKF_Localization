@@ -7,9 +7,9 @@ ExtendedKalmanFilter::ExtendedKalmanFilter() {
     P_ = Eigen::MatrixXd::Identity(6, 6);                   // Covarianza inicial
     Q_ = Eigen::MatrixXd::Identity(6, 6) * 0.2;             // Ruido del proceso
     R_gps_ = Eigen::MatrixXd::Identity(3, 3) * 0.1;         // Ruido de medición GPS (3D)
-    R_odom_ = Eigen::MatrixXd::Identity(3, 3) * 0.1;        // Ruido de medición Odometría (3D)
+    R_odom_ = Eigen::MatrixXd::Identity(3, 3) * 0.05;        // Ruido de medición Odometría (3D)
     R_beacon_ = Eigen::MatrixXd::Identity(1, 1) * 0.04;     // Ruido de medición de balizas (1D)
-    R_alt_ = Eigen::MatrixXd::Identity(1, 1) * 0.0025;      // Ruido de medición altímetro (1D)
+    R_alt_ = Eigen::MatrixXd::Identity(1, 1) * 0.005;      // Ruido de medición altímetro (1D)
     I_ = Eigen::MatrixXd::Identity(6, 6);                   // Matriz identidad
 }
 
@@ -99,15 +99,17 @@ void ExtendedKalmanFilter::updateBeacons(const std::vector<double>& distances, c
     // Para cada baliza disponible (distancia >= 0)
     for (size_t i = 0; i < distances.size(); ++i) {
         if (distances[i] < 0.0) continue; // No disponible
-        // Predicción de la distancia desde el estado actual (solo x, y)
+        // Predicción de la distancia desde el estado actual (x, y, z)
         double dx = x_(0) - beacon_positions[i](0);
         double dy = x_(1) - beacon_positions[i](1);
-        double dist_pred = std::sqrt(dx*dx + dy*dy);
+        double dz = x_(2) - beacon_positions[i](2);
+        double dist_pred = std::sqrt(dx*dx + dy*dy + dz*dz);
         if (dist_pred < 1e-6) continue; // Evitar división por cero
-        // Jacobiano H (1x6), solo x e y
+        // Jacobiano H (1x6), x, y, z
         Eigen::MatrixXd H = Eigen::MatrixXd::Zero(1, 6);
         H(0, 0) = dx / dist_pred;
         H(0, 1) = dy / dist_pred;
+        H(0, 2) = dz / dist_pred;
         // Residuo
         double y = distances[i] - dist_pred;
         // Covarianza de medición

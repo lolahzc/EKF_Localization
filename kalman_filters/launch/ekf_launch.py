@@ -6,7 +6,7 @@ import os
 
 def generate_launch_description():
 
-    rviz_config_path = os.path.expanduser('~/adrpro/src/EKF_Localization/moving_point/rviz/default.rviz')    
+    rviz_config_path = os.path.expanduser('~/ar_ws/src/EKF_Localization/moving_point/rviz/default.rviz')    
 
     return LaunchDescription([
         # Lanzamos el nodo simulator
