@@ -16,7 +16,7 @@ def generate_launch_description():
             name='simulator',
             parameters=[{
                 'odom_noise_variance': 0.01,  # Reducir de 0.05
-                'gps_noise_variance': 0.1     # Mantener o reducir
+                'gps_noise_variance': 0.1    # Mantener o reducir
             }]
         ),
         # Lanzamos el nodo static_map

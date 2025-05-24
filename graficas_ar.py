@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Cargar el archivo CSV
-df = pd.read_csv("exp_52.csv")
+df = pd.read_csv("exp_2.csv")
 
 # Tiempo en segundos desde el inicio (relativo)
 df['__time'] = df['__time'] - df['__time'].iloc[0]

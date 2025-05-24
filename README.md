@@ -34,6 +34,7 @@ El resto ya es código que podéis bichear. En el paquete de kalman_filters como
 
 1. El bueno: balizas con 6 metros, con ruido 10 cm, con 90%
 2. Entorno radioelectrico medio: 60%
-3. Entorno radioelectrico muy malo: 40%
+3. Entorno radioelectrico muy malo: 40% (este no se pone)
 4. Balizas con poco rango: 4 metros
 5. Tunel: GPS no manda
+6. Mas ruido: Q=0.8, Rgps=0.3
