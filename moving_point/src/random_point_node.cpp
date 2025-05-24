@@ -18,7 +18,9 @@ public:
                         max_speed_(0.5),
                         max_delta_v_(0.2),
                         max_height_(5.0),
-                        gps_count_(0) {
+                        gps_count_(0),
+                        tunel(false) 
+    {
         // Publishers
         marker_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("/moving_point", 10);
         ground_truth_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("/ground_truth/odom", 10);
@@ -161,41 +163,47 @@ private:
 
     void publish_noisy_gps() {
         if (gps_count_++ % 10 == 0) {
-            std::normal_distribution<double> gps_noise(
-                0.0, 
-                get_parameter("gps_noise_variance").as_double()
-            );
-            
-            // Publicar NavSatFix original
             auto gps = sensor_msgs::msg::NavSatFix();
             gps.header.stamp = now();
             gps.header.frame_id = "world";
-            gps.latitude = x_ + gps_noise(gen_);
-            gps.longitude = y_ + gps_noise(gen_);
-            gps.altitude = z_ + gps_noise(gen_);
-            gps.status.status = sensor_msgs::msg::NavSatStatus::STATUS_FIX;
+            if (tunel) {
+                gps.latitude = -1.0;
+                gps.longitude = -1.0;
+                gps.altitude = -1.0;
+                gps.status.status = sensor_msgs::msg::NavSatStatus::STATUS_NO_FIX;
+            } else {
+                std::normal_distribution<double> gps_noise(
+                    0.0, 
+                    get_parameter("gps_noise_variance").as_double()
+                );
+                gps.latitude = x_ + gps_noise(gen_);
+                gps.longitude = y_ + gps_noise(gen_);
+                gps.altitude = z_ + gps_noise(gen_);
+                gps.status.status = sensor_msgs::msg::NavSatStatus::STATUS_FIX;
+            }
             noisy_gps_pub_->publish(gps);
 
-            // Publicar Marker para visualización
-            auto marker = visualization_msgs::msg::Marker();
-            marker.header = gps.header;
-            marker.ns = "gps_measurements";
-            marker.id = gps_count_;
-            marker.type = visualization_msgs::msg::Marker::CUBE;
-            marker.action = visualization_msgs::msg::Marker::ADD;
-            marker.pose.position.x = gps.latitude;
-            marker.pose.position.y = gps.longitude;
-            marker.pose.position.z = gps.altitude;
-            marker.scale.x = 0.1;
-            marker.scale.y = 0.1;
-            marker.scale.z = 0.1;
-            marker.color.r = 1.0;
-            marker.color.g = 0.0;
-            marker.color.b = 1.0;
-            marker.color.a = 1.0;
-            marker.lifetime = rclcpp::Duration(5s);
-            
-            gps_marker_pub_->publish(marker);
+            // Publicar Marker para visualización solo si no es túnel
+            if (!tunel) {
+                auto marker = visualization_msgs::msg::Marker();
+                marker.header = gps.header;
+                marker.ns = "gps_measurements";
+                marker.id = gps_count_;
+                marker.type = visualization_msgs::msg::Marker::CUBE;
+                marker.action = visualization_msgs::msg::Marker::ADD;
+                marker.pose.position.x = gps.latitude;
+                marker.pose.position.y = gps.longitude;
+                marker.pose.position.z = gps.altitude;
+                marker.scale.x = 0.1;
+                marker.scale.y = 0.1;
+                marker.scale.z = 0.1;
+                marker.color.r = 1.0;
+                marker.color.g = 0.0;
+                marker.color.b = 1.0;
+                marker.color.a = 1.0;
+                marker.lifetime = rclcpp::Duration(5s);
+                gps_marker_pub_->publish(marker);
+            }
         }
     }
 
@@ -218,6 +226,8 @@ private:
     double max_delta_v_;
     double max_height_;
     int gps_count_;
+
+    bool tunel;
 
     std::mt19937 gen_;
     

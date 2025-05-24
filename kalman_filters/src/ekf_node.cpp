@@ -38,7 +38,8 @@ public:
             Eigen::Vector3d(4.0, 0.0, 2.0),
             Eigen::Vector3d(-5.0, 2.0, 1.0),
             Eigen::Vector3d(1.0, 3.0, 0.5),
-            Eigen::Vector3d(0.0, -4.0, 3.0)
+            Eigen::Vector3d(-3.0, -1.0, 3.0),
+            Eigen::Vector3d(1.5, -3.0, 1.5)
         };
     }
  

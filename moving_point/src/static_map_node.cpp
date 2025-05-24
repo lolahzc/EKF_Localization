@@ -29,7 +29,8 @@ public:
             {4.0, 0.0, 2.0},
             {-5.0, 2.0, 1.0},
             {1.0, 3.0, 0.5},
-            {0.0, -4.0, 3.0}
+            {-3.0, -1.0, 3.0},
+            {1.5, -3.0, 1.5},
         };
     }
 
@@ -84,9 +85,9 @@ private:
             marker.pose.position.z = point[2];
 
             marker.pose.orientation.w = 1.0;
-            marker.scale.x = 16.0;
-            marker.scale.y = 16.0;
-            marker.scale.z = 16.0;
+            marker.scale.x = 12.0;
+            marker.scale.y = 12.0;
+            marker.scale.z = 12.0;
 
             marker.color.a = 0.1;
             marker.color.r = 0.0;
@@ -111,16 +112,17 @@ private:
 class BeaconDistanceNode : public rclcpp::Node {
 public:
     BeaconDistanceNode(const std::vector<std::array<double, 3>>& beacons)
-    : Node("beacon_distance_node"), beacons_(beacons), max_range_(8.0) {
+    : Node("beacon_distance_node"), beacons_(beacons), max_range_(6.0) {
         sub_pose_ = this->create_subscription<nav_msgs::msg::Odometry>(
             "/ground_truth/odom", 10,
             std::bind(&BeaconDistanceNode::pose_callback, this, std::placeholders::_1));
 
         pub_distances_ = this->create_publisher<std_msgs::msg::Float64MultiArray>("/beacon_distances", 10);
+        pub_distances_real_ = this->create_publisher<std_msgs::msg::Float64MultiArray>("/beacon_distances_real", 10);
 
         std::random_device rd;
         gen_ = std::mt19937(rd());
-        noise_ = std::normal_distribution<>(0.0, 0.20);  // 20cm de ruido gaussiano
+        noise_ = std::normal_distribution<>(0.0, 0.10);  // 10cm de ruido gaussiano
         dis_ = std::uniform_real_distribution<>(0.0, 1.0);
 
     }
@@ -131,11 +133,12 @@ private:
         double y = msg->pose.pose.position.y;
         double z = msg->pose.pose.position.z;
 
-        double success_rate = 0.8; // 80% de acierto
-
+        double success_rate = 0.9; // 90% de acierto
 
         std_msgs::msg::Float64MultiArray distances_msg;
         distances_msg.data.clear();
+        std_msgs::msg::Float64MultiArray distances_real_msg;
+        distances_real_msg.data.clear();
 
         for (const auto& beacon : beacons_) {
             double dx = beacon[0] - x;
@@ -143,6 +146,14 @@ private:
             double dz = beacon[2] - z;
             double dist = std::sqrt(dx*dx + dy*dy + dz*dz);
 
+            // Real distance (sin ruido, pero -1 si no disponible)
+            if (dist > max_range_) {
+                distances_real_msg.data.push_back(-1.0);
+            } else {
+                distances_real_msg.data.push_back(dist);
+            }
+
+            // Medida con ruido y probabilidad de acierto
             if (dis_(gen_) < success_rate) {   
                 if (dist > max_range_) {
                     distances_msg.data.push_back(-1.0);  // No disponible
@@ -155,11 +166,13 @@ private:
             }
         }
 
+        pub_distances_real_->publish(distances_real_msg);
         pub_distances_->publish(distances_msg);
     }
 
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_pose_;
     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr pub_distances_;
+    rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr pub_distances_real_;
     std::vector<std::array<double, 3>> beacons_;
     double max_range_;
 

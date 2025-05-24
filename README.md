@@ -27,3 +27,13 @@ Dejo los pasos a seguir por si no os va algo u os hacéis la picha un lío.
 El resto ya es código que podéis bichear. En el paquete de kalman_filters como podréis intuir está todo lo que es puro código de filtro y todo lo que viene siendo la simulación de la bolita y todo dato de sensor está en moving_point.
 
 * PD: Puede que se me olvide algo o haya escrito mal algún comando.
+
+
+
+## Experimentos
+
+1. El bueno: balizas con 6 metros, con ruido 10 cm, con 90%
+2. Entorno radioelectrico medio: 60%
+3. Entorno radioelectrico muy malo: 40%
+4. Balizas con poco rango: 4 metros
+5. Tunel: GPS no manda
