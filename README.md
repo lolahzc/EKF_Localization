@@ -2,7 +2,7 @@
 
 ## Instrucciones
 
-Dejo los pasos a seguir por si no os va algo u os hacéis la picha un lío.
+Pasos a seguir para clonar el repositorio:
 
 1. Os hacéis un workspace nuevo donde queráis de vuestro ordenador.
     - mkdir ar_ws
