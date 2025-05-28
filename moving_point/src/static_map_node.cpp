@@ -9,9 +9,7 @@
 
 using namespace std::chrono_literals;
 
-// =======================
-// Nodo para publicar balizas (RViz)
-// =======================
+// Nodo para publicar en RViz
 class StaticMapNode : public rclcpp::Node {
 public:
     StaticMapNode() : Node("static_map_node") {
@@ -106,13 +104,11 @@ private:
     std::vector<std::array<double, 3>> map_points_;
 };
 
-// =======================
 // Nodo para simular distancias a balizas con límite de alcance
-// =======================
 class BeaconDistanceNode : public rclcpp::Node {
 public:
     BeaconDistanceNode(const std::vector<std::array<double, 3>>& beacons)
-    : Node("beacon_distance_node"), beacons_(beacons), max_range_(6.0) {
+    : Node("beacon_distance_node"), beacons_(beacons), max_range_(6.0) { // 6 metros de alcance máximo
         sub_pose_ = this->create_subscription<nav_msgs::msg::Odometry>(
             "/ground_truth/odom", 10,
             std::bind(&BeaconDistanceNode::pose_callback, this, std::placeholders::_1));
@@ -122,7 +118,7 @@ public:
 
         std::random_device rd;
         gen_ = std::mt19937(rd());
-        noise_ = std::normal_distribution<>(0.0, 0.10);  // 10cm de ruido gaussiano
+        noise_ = std::normal_distribution<>(0.0, 0.10);  // 10 cm de ruido gaussiano
         dis_ = std::uniform_real_distribution<>(0.0, 1.0);
 
     }
@@ -146,7 +142,7 @@ private:
             double dz = beacon[2] - z;
             double dist = std::sqrt(dx*dx + dy*dy + dz*dz);
 
-            // Real distance (sin ruido, pero -1 si no disponible)
+            // Distancia real (sin ruido, pero -1 si no disponible)
             if (dist > max_range_) {
                 distances_real_msg.data.push_back(-1.0);
             } else {
@@ -181,12 +177,11 @@ private:
     std::uniform_real_distribution<> dis_;
 };
 
-// =======================
+
 // Nodo para simular altímetro con límite de altura
-// =======================
 class AltimeterNode : public rclcpp::Node {
 public:
-    AltimeterNode() : Node("altimeter_node"), max_altitude_(20.0) {
+    AltimeterNode() : Node("altimeter_node"), max_altitude_(20.0) { // 20 metros de altura máxima
         sub_pose_ = this->create_subscription<nav_msgs::msg::Odometry>(
             "/ground_truth/odom", 10,
             std::bind(&AltimeterNode::pose_callback, this, std::placeholders::_1));
@@ -205,7 +200,7 @@ private:
         std_msgs::msg::Float64 alt_msg;
 
         if (z > max_altitude_) {
-            alt_msg.data = -1.0;  // Simula que el sensor no capta
+            alt_msg.data = -1.0;  // No disponible
         } else {
             double noisy_z = z + noise_(gen_);
             alt_msg.data = noisy_z;
@@ -222,9 +217,7 @@ private:
     std::normal_distribution<> noise_;
 };
 
-// =======================
-// MAIN
-// =======================
+
 int main(int argc, char * argv[]) {
     rclcpp::init(argc, argv);
 

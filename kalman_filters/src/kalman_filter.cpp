@@ -4,7 +4,7 @@
 #include <fstream>
 #include <rclcpp/rclcpp.hpp>
 
-// Archivo global para guardar los tiempos
+// Archivo para guardar el coste computacional
 std::ofstream timing_file("/ar_ws/src/EKF_Localization/ekf_tiempos.csv", std::ios::app);
 
 // Constructor
@@ -19,13 +19,13 @@ ExtendedKalmanFilter::ExtendedKalmanFilter() {
     I_ = Eigen::MatrixXd::Identity(6, 6);                   // Matriz identidad
 }
 
-// Inicializa el filtro con el estado inicial y la covarianza
+// Inicialización del filtro con el estado inicial y la covarianza
 void ExtendedKalmanFilter::init(const Eigen::VectorXd& x0, const Eigen::MatrixXd& P0) {
     x_ = x0;
     P_ = P0;
 }
 
-// Predicción del estado y covarianza para un modelo de dron en 3D
+// Predicción del estado y covarianza para un modelo de dron en 3Dmplifica el modelo y es común en robótica cuando se quiere reducir la dimensión del estado y se asume que el dron siempre se mueve "hacia adelante" según su orientación
 void ExtendedKalmanFilter::predict(double dt, const Eigen::Vector3d& omega) {
     double theta = x_(3);  // Ángulo yaw
     double phi = x_(4);    // Ángulo pitch
@@ -57,7 +57,7 @@ void ExtendedKalmanFilter::predict(double dt, const Eigen::Vector3d& omega) {
     P_ = F * P_ * F.transpose() + Q_;
 }
 
-// Actualiza el estado con la medición GPS (posición XYZ)
+// Actualización del estado con la medición GPS (posición XYZ)
 void ExtendedKalmanFilter::updateGPS(const Eigen::Vector3d& z) {
     auto t_start = std::chrono::steady_clock::now();
     Eigen::Vector3d z_pred = x_.segment<3>(0);  // h(x) = [x, y, z]
@@ -73,13 +73,14 @@ void ExtendedKalmanFilter::updateGPS(const Eigen::Vector3d& z) {
 
     x_ = x_ + K * y;
     P_ = (I_ - K * H) * P_;
+
     auto t_end = std::chrono::steady_clock::now();
     double elapsed = std::chrono::duration<double>(t_end - t_start).count();
     RCLCPP_DEBUG(rclcpp::get_logger("EKF"), "GPS time: %.6f s", elapsed);
     if (timing_file.is_open()) timing_file << "GPS," << std::chrono::system_clock::now().time_since_epoch().count() << "," << elapsed << std::endl;
 }
 
-// Actualiza el estado con la medición de odometría (velocidad XYZ)
+// Actualización del estado con la medición de odometría (velocidad XYZ)
 void ExtendedKalmanFilter::updateOdom(const Eigen::Vector3d& v_measured) {
     auto t_start = std::chrono::steady_clock::now();
     double theta = x_(3);
@@ -104,13 +105,14 @@ void ExtendedKalmanFilter::updateOdom(const Eigen::Vector3d& v_measured) {
 
     x_ = x_ + K * y;
     P_ = (I_ - K * H) * P_;
+
     auto t_end = std::chrono::steady_clock::now();
     double elapsed = std::chrono::duration<double>(t_end - t_start).count();
     RCLCPP_DEBUG(rclcpp::get_logger("EKF"), "Odom time: %.6f s", elapsed);
     if (timing_file.is_open()) timing_file << "Odom," << std::chrono::system_clock::now().time_since_epoch().count() << "," << elapsed << std::endl;
 }
 
-// Actualiza el estado con las distancias a balizas
+// Actualización del estado con las distancias a balizas
 void ExtendedKalmanFilter::updateBeacons(const std::vector<double>& distances, const std::vector<Eigen::Vector3d>& beacon_positions) {
     auto t_start = std::chrono::steady_clock::now();
     // Para cada baliza disponible (distancia >= 0)
@@ -127,21 +129,22 @@ void ExtendedKalmanFilter::updateBeacons(const std::vector<double>& distances, c
         H(0, 0) = dx / dist_pred;
         H(0, 1) = dy / dist_pred;
         H(0, 2) = dz / dist_pred;
-        // Residuo
         double y = distances[i] - dist_pred;
-        // Covarianza de medición
+        
         Eigen::MatrixXd S = H * P_ * H.transpose() + R_beacon_;
         Eigen::MatrixXd K = P_ * H.transpose() * S.inverse();
+
         x_ = x_ + K * y;
         P_ = (I_ - K * H) * P_;
     }
+
     auto t_end = std::chrono::steady_clock::now();
     double elapsed = std::chrono::duration<double>(t_end - t_start).count();
     RCLCPP_DEBUG(rclcpp::get_logger("EKF"), "Beacons time: %.6f s", elapsed);
     if (timing_file.is_open()) timing_file << "Beacons," << std::chrono::system_clock::now().time_since_epoch().count() << "," << elapsed << std::endl;
 }
 
-// Actualiza el estado con la medición del altímetro (z)
+// Actualización del estado con la medición del altímetro (z)
 void ExtendedKalmanFilter::updateAltimeter(double z_measured) {
     auto t_start = std::chrono::steady_clock::now();
     // h(x) = z
@@ -150,8 +153,10 @@ void ExtendedKalmanFilter::updateAltimeter(double z_measured) {
     double y = z_measured - x_(2);
     Eigen::MatrixXd S = H * P_ * H.transpose() + R_alt_;
     Eigen::MatrixXd K = P_ * H.transpose() * S.inverse();
+
     x_ = x_ + K * y;
     P_ = (I_ - K * H) * P_;
+
     auto t_end = std::chrono::steady_clock::now();
     double elapsed = std::chrono::duration<double>(t_end - t_start).count();
     RCLCPP_DEBUG(rclcpp::get_logger("EKF"), "Altimeter time: %.6f s", elapsed);

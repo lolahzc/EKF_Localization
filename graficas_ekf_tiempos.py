@@ -8,15 +8,14 @@ csv_path = "ekf_tiempos.csv"
 # Leer el archivo CSV
 df = pd.read_csv(csv_path, header=None, names=["Tipo", "Timestamp", "Tiempo"])
 
-# Convertir timestamp a relativo si quieres (opcional)
 df["Timestamp"] = df["Timestamp"] - df["Timestamp"].iloc[0]
 
-# Graficar cada tipo de callback
+# Graficar cada tipo de sensor
 tipos = df["Tipo"].unique()
 plt.figure(figsize=(12, 6))
 for tipo in tipos:
     datos = df[df["Tipo"] == tipo]
-    # Convertir a numpy array para evitar el error de pandas
+
     x = datos["Timestamp"].to_numpy()
     y = datos["Tiempo"].to_numpy()
     plt.plot(x, y, label=tipo, marker='.', linestyle='-', alpha=0.7)

@@ -1,40 +1,37 @@
 # EKF_Localization
 
-## Instrucciones
+Este proyecto implementa y simula un sistema de localización 3D para un dron usando un Filtro de Kalman Extendido (EKF) en ROS2. El sistema fusiona datos de GPS, odometría, balizas y altímetro, siendo robusto ante la pérdida temporal de cualquier sensor. Incluye simulación de sensores, visualización en RViz y herramientas para analizar los resultados de los experimentos.
 
-Pasos a seguir para clonar el repositorio:
+## Instalación y uso rápido
 
-1. Os hacéis un workspace nuevo donde queráis de vuestro ordenador.
-    - mkdir ar_ws
-    - cd ar_ws
-    - mkdir src
-    - cd src
+1. **Crea un workspace ROS2 y clona el repositorio:**
+   ```bash
+   mkdir -p ar_ws/src
+   cd ar_ws/src
+   git clone https://github.com/lolahzc/EKF_Localization.git
+   cd ..
+   ```
+2. **Configura RViz:**
+   Edita la ruta `rviz_config_path` en `kalman_filters/launch/ekf_launch.py` para que apunte a tu archivo `.rviz`.
 
-2. Os clonáis este repositorio en el que solo están los paquetes. 
-    - Yo utilizo ssh pero vosotros creo que estáis acostumbrados a hacer https
-        - git clone git@github.com:lolahzc/EKF_Localization.git
-        - git clone https://github.com/lolahzc/EKF_Localization.git
+3. **Compila:**
+   ```bash
+   colcon build
+   source install/setup.bash
+   ```
+4. **Lanza la simulación y el EKF:**
+   ```bash
+   ros2 launch kalman_filters ekf_launch.py
+   ```
 
-3. Antes de seguir os tenéis que meter en ~/kalman_filters/launch/ekf_launch.py. Aquí cambiáis la ruta que sale en **rviz_config_path** por vuestra ruta.
+## Estructura
+- `kalman_filters/`: Código del EKF y launch files.
+- `moving_point/`: Simulación de sensores y entorno.
+- `graficas/`: Figuras de los resultados de los experimentos realizados.
 
-4. Ahora ya podéis ir a la carpeta del workspace y hacer **colcon build**
-
-5. Para lanzar el código:
-    - En la carpeta de vuestro repositorio hacéis:
-        - source install/setup.bash
-        - ros2 launch kalman_filters ekf_launch.py   
-
-El resto ya es código que podéis bichear. En el paquete de kalman_filters como podréis intuir está todo lo que es puro código de filtro y todo lo que viene siendo la simulación de la bolita y todo dato de sensor está en moving_point.
-
-* PD: Puede que se me olvide algo o haya escrito mal algún comando.
-
-
-
-## Experimentos
-
-1. El bueno: balizas con 6 metros, con ruido 10 cm, con 90%
-2. Entorno radioelectrico medio: 60%
-3. Entorno radioelectrico muy malo: 40% (este no se pone)
-4. Balizas con poco rango: 4 metros
-5. Tunel: GPS no manda
-6. Mas ruido: Q=0.8, Rgps=0.3
+## Experimentos sugeridos
+1. **Caso ideal:** Balizas con 6 m de rango, 90% acierto de envío de mensajes en entorno radioeléctrico.
+2. **Entorno radioeléctrico medio:** 60% acierto.
+3. **Balizas con poco rango:** 4 m.
+4. **Túnel:** GPS desactivado.
+5. **Más ruido:** Q=0.8, Rgps=0.3.

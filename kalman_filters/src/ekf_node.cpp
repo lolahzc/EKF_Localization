@@ -20,10 +20,10 @@ public:
             "/sensors/gps", 10,
             std::bind(&EKFNode::gps_callback, this, std::placeholders::_1));
 
-        // Suscripción a balizas y altímetro
         beacon_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
             "/beacon_distances", 10,
             std::bind(&EKFNode::beacon_callback, this, std::placeholders::_1));
+
         altimeter_sub_ = this->create_subscription<std_msgs::msg::Float64>(
             "/altimeter", 10,
             std::bind(&EKFNode::altimeter_callback, this, std::placeholders::_1));
@@ -32,7 +32,6 @@ public:
 
         timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&EKFNode::publish_estimate, this));
 
-        // Posiciones fijas de las balizas (deben coincidir con las del mapa (o lo hacemos a mano o si tenemos tiempo lo ponemos como una única variable global))
         beacon_positions_ = {
             Eigen::Vector3d(0.0, 0.0, 0.0),
             Eigen::Vector3d(4.0, 0.0, 2.0),
@@ -106,7 +105,7 @@ private:
         marker.action = visualization_msgs::msg::Marker::ADD;
         marker.pose.position.x = x(0);
         marker.pose.position.y = x(1);
-        marker.pose.position.z = x(2);  // Z ahora está incluido en 3D
+        marker.pose.position.z = x(2);  
 
         marker.scale.x = 0.2;
         marker.scale.y = 0.2;
@@ -128,8 +127,6 @@ private:
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gps_sub_;
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_;
-
-    // Nuevas suscripciones y posiciones de balizas
     std::vector<Eigen::Vector3d> beacon_positions_;
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr beacon_sub_;
     rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr altimeter_sub_;

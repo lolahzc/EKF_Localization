@@ -32,13 +32,13 @@ public:
         update_timer_ = this->create_wall_timer(100ms, std::bind(&RandomPointNode::update_callback, this));
         sensor_timer_ = this->create_wall_timer(100ms, std::bind(&RandomPointNode::sensor_callback, this));
 
-        // Random initialization
+        // Inialización random
         gen_ = std::mt19937(std::random_device{}());
         vx_ = std::uniform_real_distribution<>(-max_speed_, max_speed_)(gen_);
         vy_ = std::uniform_real_distribution<>(-max_speed_, max_speed_)(gen_);
         vz_ = std::uniform_real_distribution<>(-max_height_, max_height_)(gen_);
         
-        // Parameters
+        // Parámetros
         declare_parameter("odom_noise_variance", 0.01);
         declare_parameter("gps_noise_variance", 0.1);
     }
@@ -53,27 +53,27 @@ private:
     void update_position() {
         const double dt = 0.1;
         
-        // Update velocity
+        // Actualización de velocidad
         std::uniform_real_distribution<> delta_dist(-max_delta_v_, max_delta_v_);
         vx_ += delta_dist(gen_);
         vy_ += delta_dist(gen_);
         vz_ += delta_dist(gen_);
         
-        // Clamp velocity
+        // Restricción de velocidad 
         vx_ = std::clamp(vx_, -max_speed_, max_speed_);
         vy_ = std::clamp(vy_, -max_speed_, max_speed_);
         vz_ = std::clamp(vz_, -max_height_, max_height_);
 
         if (std::abs(vz_) < 0.01) {
-            vz_ += std::uniform_real_distribution<>(-0.05, 0.05)(gen_); // Stop vertical movement if close to zero
+            vz_ += std::uniform_real_distribution<>(-0.05, 0.05)(gen_); // Detener el movimiento vertical si está cerca de cero
         }
         
-        // Update position
+        // Actualización de posición
         x_ += vx_ * dt;
         y_ += vy_ * dt;
         z_ += vz_ * dt;
         
-        // Check boundaries
+        // Límites de mapa
         check_boundary(x_, vx_, -5.0, 5.0);
         check_boundary(y_, vy_, -5.0, 5.0);
         check_boundary(z_, vz_, 0.0, max_height_);
@@ -106,7 +106,6 @@ private:
 
         marker.pose.orientation = quat_msg;
         
-        // Corregir escala y color
         marker.scale.x = 0.1;
         marker.scale.y = 0.1;
         marker.scale.z = 0.1;
@@ -153,7 +152,6 @@ private:
             get_parameter("odom_noise_variance").as_double()
         );
         
-        // Asignación explícita
         odom.twist.twist.linear.x = vx_ + noise(gen_);
         odom.twist.twist.linear.y = vy_ + noise(gen_);
         odom.twist.twist.linear.z = 0.0;
@@ -183,7 +181,6 @@ private:
             }
             noisy_gps_pub_->publish(gps);
 
-            // Publicar Marker para visualización solo si no es túnel
             if (!tunel) {
                 auto marker = visualization_msgs::msg::Marker();
                 marker.header = gps.header;
