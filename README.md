@@ -29,7 +29,7 @@ Este proyecto implementa y simula un sistema de localización 3D para un dron us
 - `moving_point/`: Simulación de sensores y entorno.
 - `graficas/`: Figuras de los resultados de los experimentos realizados.
 
-## Experimentos sugeridos
+## Experimentos
 1. **Caso ideal:** Balizas con 6 m de rango, 90% acierto de envío de mensajes en entorno radioeléctrico.
 2. **Entorno radioeléctrico medio:** 60% acierto.
 3. **Balizas con poco rango:** 4 m.
